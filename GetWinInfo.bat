@@ -29,7 +29,6 @@ REM Check the OS
 if %os%==Windows_NT goto WINNT
 goto NOWIN
 
-
 :WINNT
 echo .Using a Windows NT based system
 echo ..%computername%
@@ -113,55 +112,47 @@ echo Current Date and Time: %DATE% %TIME% >> %file%
 echo -------------------------------------------- >> %file%
 wmic /APPEND:%file% /namespace:\\root\securitycenter2 path antivirusproduct >> nul
 
-REM Getting usernames and their sid
+REM Getting usernames
 echo [*] Getting usernames
-SET file="%folder%/sidd.txt"
+SET file="%~dp0%folder%\users.txt"
 echo -------------------------------------------- > %file%
 echo USERS >> %file%
 echo on Computer: %COMPUTERNAME% >> %file%
 echo Current Date and Time: %DATE% %TIME% >> %file%
 echo -------------------------------------------- >> %file%
-FOR /F "tokens=*" %%a IN ('wmic UserAccount where "LocalAccount=True"') DO (
-	if not "%aa"="" (
-		echo %%a >> %file%
-	)
-)
+wmic /APPEND:%file% UserAccount where "LocalAccount=True" >> nul
 
-REM Get LOCAL user accounts
-echo [*] Gettin LOCAL user list
-SET file="%folder%/users.txt"
+REM Getting hotfixes and service packs
+echo [*] Getting hotfixes and service packs. It may take a while...
+SET file="%~dp0%folder%\hotfixes.txt"
 echo -------------------------------------------- > %file%
-echo USERS >> %file%
+echo HOTFIXES AND SERVICE PACKS >> %file%
+echo on Computer: %COMPUTERNAME% >> %file%
+echo Current Date and Time: %DATE% %TIME% >> %file%
 echo -------------------------------------------- >> %file%
-wmic /OUTPUT:%file% useraccount
+wmic /APPEND:%file% qfe >> nul
 
+REM Getting startup list
+echo [*] Getting startup list
+SET file="%~dp0%folder%\startup.txt"
+echo -------------------------------------------- > %file%
+echo STARTUP LIST >> %file%
+echo on Computer: %COMPUTERNAME% >> %file%
+echo Current Date and Time: %DATE% %TIME% >> %file%
+echo -------------------------------------------- >> %file%
+wmic /APPEND:%file% startup list full >> nul
 
+REM Getting current environment variable settings
+echo [*] Getting environment variables
+SET file="%~dp0%folder%\enviromen.txt"
+echo -------------------------------------------- > %file%
+echo environment VARIABLE SETTINGS >> %file%
+echo on Computer: %COMPUTERNAME% >> %file%
+echo Current Date and Time: %DATE% %TIME% >> %file%
+echo -------------------------------------------- >> %file%
+set >> %file%
 
-echo ---------------
-::wmic useraccount get name,fullname
-setlocal enableDelayedExpansion
-Set User=
-FOR /F "tokens=2 delims='='" %%i IN ('wmic useraccount get name /value') DO (
-	SET "User=!User! ^"
-	SET "User=!User!%%i"
-)
-echo %User%
-echo -------------------
-
-Set User=
-for /F "skip=1" %%i in ('wmic useraccount get name') DO (
-	SET "User=!User!%%i"
-)
-echo %User%
-goto END
-
-:sub
-REM Get LOCAL user accounts
-echo Pippo
-for /F "skip=1" %i in ('wmic useraccount get name') DO @echo. & echo %i & net user %i | find "*"
-
-REM request user to push any key to continue
-pause
+::====================================================
 
 goto END
 
