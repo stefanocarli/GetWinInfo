@@ -42,14 +42,11 @@ if %os%==Windows_NT goto WINNT
 goto NOWIN
 
 :WINNT
-echo .Using a Windows NT based system
-echo ..%computername%
-
-echo Getting data [Computer: %computername%]...
-echo Please Wait....
 
 REM Create directory if it doesn't exist
+echo | set /p="[*] Creating folder %folder%... "
 IF NOT EXIST %folder% md %folder%
+echo done
 
 REM Get general OS info
 echo [*] Getting general OS info...
