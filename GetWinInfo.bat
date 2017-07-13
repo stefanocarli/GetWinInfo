@@ -12,19 +12,23 @@ setlocal EnableDelayedExpansion
 
 TITLE Get Windows OS info
 
+REM set variables
+set "volume=C:"
 set folder=%~dp0tester\
+set file=
 
 REM Ask the user if she wants to proceed
 :choice
 echo This batch script will gather information of your Windows system and will generate the following files in %folder%:
+echo - general.txt
+echo - software.txt
 echo - directories.txt
 echo - tasklist.txt
 echo - network.txt
 echo - reg-(registry type).txt
 echo - antivirus.txt
-echo - users
-echo - hotfixes
-
+echo - users.txt
+echo - hotfixes.txt
 
 SET /P ANSWER=Do you want to proceed? (Y/N)
 if /I {%ANSWER%}=={Y} (goto :checkOS)
@@ -44,12 +48,84 @@ echo ..%computername%
 echo Getting data [Computer: %computername%]...
 echo Please Wait....
 
-REM set variables
-set "volume=C:"
-
-
 REM Create directory if it doesn't exist
 IF NOT EXIST %folder% md %folder%
+
+REM Get general OS info
+echo [*] Getting general OS info...
+SET file="%folder%general.txt"
+
+REM Get Computer Name
+echo - Computer name
+FOR /F "tokens=2 delims='='" %%A in ('wmic OS Get csname /value') do (
+	echo Computer Name: %%A > %file%
+)
+
+REM Get Computer Manufacturer
+echo - Computer manufacturer
+FOR /F "tokens=2 delims='='" %%A in ('wmic ComputerSystem Get Manufacturer /value') do (
+	echo Computer Manufacturer: %%A >> %file%
+)
+
+REM Get Computer Model
+echo - Computer model
+FOR /F "tokens=2 delims='='" %%A in ('wmic ComputerSystem Get Model /value') do (
+	echo Computer Model: %%A >> %file%
+)
+
+REM Get Computer Serial Number
+echo - Computer serial number
+FOR /F "tokens=2 delims='='" %%A in ('wmic Bios Get SerialNumber /value') do (
+	echo Computer serial number: %%A >> %file%
+)
+
+REM Get Computer OS
+echo - Computer OS
+FOR /F "tokens=2 delims='='" %%A in ('wmic os get Name /value') do SET osname=%%A
+FOR /F "tokens=1 delims='|'" %%A in ("%osname%") do (
+	echo Computer OS: %%A >> %file%
+)
+
+REM Get Computer OS SP
+echo - Computer service pack
+FOR /F "tokens=2 delims='='" %%A in ('wmic os get ServicePackMajorVersion /value') do (
+	echo Computer Service Pack: %%A >> %file%
+)
+
+REM Get Memory
+echo - Memory
+FOR /F "tokens=4" %%a in ('systeminfo ^| findstr Physical') do if defined totalMem (set availableMem=%%a) else (set totalMem=%%a)
+set totalMem=%totalMem:,=%
+set availableMem=%availableMem:,=%
+set /a usedMem=totalMem-availableMem
+echo Total Memory: %totalMem% >> %file%
+echo Used  Memory: %usedMem% >> %file%
+
+FOR /f "tokens=1*delims=:" %%i IN ('fsutil volume diskfree %volume%') DO (
+    SET "diskfree=!disktotal!"
+    SET "disktotal=!diskavail!"
+    SET "diskavail=%%j"
+)
+FOR /f "tokens=1,2" %%i IN ("%disktotal% %diskavail%") DO SET "disktotal=%%i"& SET "diskavail=%%j"
+echo C:\ Total: %disktotal:~0,-9% GB >> %file%
+echo C:\ Avail: %diskavail:~0,-9% GB >> %file%
+echo done
+
+REM list installed programs
+echo | set /p="[*] Getting installed programs... "
+SET file="%folder%software.txt"
+echo -------------------------------------------- > %file%
+echo INSTALLED PROGRAMS >> %file%
+echo on Computer: %COMPUTERNAME% >> %file%
+echo Current Date and Time: %DATE% %TIME% >> %file%
+echo -------------------------------------------- >> %file%
+wmic /APPEND:%file%  product get name >> nul
+echo done
+
+REM list installed programs
+FOR /F "tokens=2 delims='='" %%A in ('wmic product get name /value') do SET app=%%A
+
+
 
 REM List down all the directories 
 echo [*] Getting directories...
